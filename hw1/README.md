@@ -12,4 +12,4 @@ _pls notice, now I've got a cable_
 
 ### Video
 
-<iframe width="100%" height="500" src="https://www.youtube.com/embed/DEQoQUy8244" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Potentiometer goes "voop"](https://img.youtube.com/vi/DEQoQUy8244/0.jpg)](https://www.youtube.com/watch?v=DEQoQUy8244)
