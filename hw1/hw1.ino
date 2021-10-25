@@ -1,4 +1,6 @@
 const int potCount = 3, ledCount = 3;
+//small maxLedBrigtness because the led is very bright
+// at higher coresponding voltages
 const int minPotValue = 0, maxPotValue = 1023,
           minLedBrightness = 0, maxLedBrightness = 32;
 
