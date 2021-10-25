@@ -12,6 +12,7 @@ void setArrayPinMode(int *arr, int len, int mode) {
   }
 }
 
+
 void setup() {
   Serial.begin(9600);
   
@@ -20,10 +21,6 @@ void setup() {
 }
 
 void loop() {
-
-  // for every pot read the value, map it 
-  // and write it to the corresponding led
-  
   for (int i = 0; i < potCount; ++ i) {
     int potValue = analogRead(potPins[i]);
     int ledBrightness = map(potValue, minPotValue, maxPotValue,
