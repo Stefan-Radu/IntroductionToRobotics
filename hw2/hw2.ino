@@ -7,15 +7,25 @@ const int carRedLedPin = 13,
 const int buttonPin = 4,
           buzzerPin = 3;
 
-int currentState = 0,
-    buttonState = HIGH,
-    lastButtonReading = HIGH,
-    timeSnapshot = 0; // used in each state for timing
-
+unsigned int currentState = 0,
+             buttonState = HIGH,
+             lastButtonReading = HIGH;
+             
+unsigned long timeSnapshot = 0, // used in each state for timing
+              buzzerTimeSnapshot = 0; // used for intermitent sound
+    
 // state0. default state. waiting for button press
 // green for cars, red for people, no sound
 void switchToState0() {
+  unsigned long currentTimestamp = millis();
+  
+  // reset values to a default state proper for further use
   currentState = 0;
+  timeSnapshot = currentTimestamp;
+  buzzerTimeSnapshot = currentTimestamp;
+  lastButtonReading = HIGH;
+  buttonState = HIGH;
+  
   digitalWrite(carGreenLedPin, HIGH);
   digitalWrite(carYellowLedPin, LOW);
   digitalWrite(carRedLedPin, LOW);
@@ -25,7 +35,7 @@ void switchToState0() {
 
 void state0Logic() {
   static const int debounceDelay = 50;    
-  static unsigned int lastDebounceTime = 0;
+  static unsigned long lastDebounceTime = 0;
   
   int buttonReading = digitalRead(buttonPin);
   if (buttonReading != lastButtonReading) {
@@ -36,8 +46,9 @@ void state0Logic() {
     if (buttonReading != buttonState) {
       buttonState = buttonReading;
       if (buttonState == LOW) {
-        // am apasat pe buton, deci schimb starea
+        // change state on button press
         switchToState1();
+        return;
       }
     }
   }
@@ -50,7 +61,6 @@ void state0Logic() {
 void switchToState1() {
   currentState = 1;
   timeSnapshot = millis();
-  Serial.println("State 1");
 }
 
 void state1Logic() {
@@ -68,7 +78,6 @@ void switchToState2() {
   
   digitalWrite(carGreenLedPin, LOW);
   digitalWrite(carYellowLedPin, HIGH);
-  Serial.println("State 2");
 }
 
 void state2Logic() {
@@ -88,11 +97,72 @@ void switchToState3() {
   digitalWrite(carRedLedPin, HIGH);
   digitalWrite(peopleRedLedPin, LOW);
   digitalWrite(peopleGreenLedPin, HIGH);
-  Serial.println("State 3");
 }
 
 void state3Logic() {
+  static const int state3Duration = 10 * 1000, // milliseconds
+                   buzzInterval = 1000, // milliseconds
+                   buzzerTone = 440; // A4
+  static bool buzzerState = 0;
 
+  unsigned long currentTimestamp = millis();
+  if (currentTimestamp - timeSnapshot >= state3Duration) {
+    buzzerState = 0;
+    switchToState4();
+    return;
+  }
+
+  if (currentTimestamp - buzzerTimeSnapshot >= buzzInterval) {
+    buzzerState = !buzzerState;
+    if (buzzerState == 1) {
+      tone(buzzerPin, buzzerTone);
+    }
+    else {
+      noTone(buzzerPin);
+    }
+    buzzerTimeSnapshot = currentTimestamp;
+  }
+}
+
+// state4. red for cars, blinking green for people, faster beeping
+// wait <state 4 duration> seconds to switch back to default state 0
+void switchToState4() {
+  currentState = 4;
+  timeSnapshot = millis();
+}
+
+void state4Logic() {
+  // shave and a haircut two bits (total 4.5 seconds)
+                                   //    1/4       1/2       1/4,      1/8,     1/8,     1/4,      1/4,      1/4,    1/4       1/4
+  static const int buzzIntervals[] = {1, 100, 400, 200, 800, 100, 400, 50, 200, 50, 200, 100, 400, 100, 400, 0, 500, 100, 400, 100, 400}, // durations
+                                   //    G2        G2        C5        G5       G5       A5        G5        pause   B5        C6
+                   buzzerTones[]   = {0, 98, 0,    98, 0,    523, 0,   784, 0,  784, 0,  880, 0,   784, 0,   0, 0,   988, 0,   1047, 0}, // notes
+                   totalSteps = 20;
+  
+  static int buzzerStep = 0; 
+  static bool buzzerState = 0;
+
+  if (buzzerStep == totalSteps) {
+    buzzerStep = 0;
+    buzzerState = 0;
+    noTone(buzzerPin);
+    switchToState0();
+    return;
+  }
+
+  unsigned long currentTimestamp = millis();
+  if (currentTimestamp - timeSnapshot >= buzzIntervals[buzzerStep]) {
+    timeSnapshot = currentTimestamp;
+    buzzerStep += 1;
+    if (buzzerTones[buzzerStep] == 0) {
+      noTone(buzzerPin);
+      digitalWrite(peopleGreenLedPin, HIGH);
+    }
+    else {
+      tone(buzzerPin, buzzerTones[buzzerStep]);
+      digitalWrite(peopleGreenLedPin, LOW);
+    }
+  }
 }
 
 void setup() {
@@ -109,7 +179,6 @@ void setup() {
 
   // default in state 0
   switchToState0();
-  Serial.begin(9600);
 }
 
 void loop() {
@@ -125,6 +194,9 @@ void loop() {
       break;
     case 3:
       state3Logic();
+      break;
+    case 4:
+      state4Logic();
       break;
   }
 }
