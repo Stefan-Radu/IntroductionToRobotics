@@ -40,6 +40,7 @@ byte digitMatrix[noOfDigits][segSize - 1] = {
 // uses the above matrix to form a digit
 // on the 7 seven segment display
 void displayDigit(int digit) {
+  // -1 to avoid the dot
   for (int i = 0; i < segSize - 1; ++ i) {
     digitalWrite(segments[i], digitMatrix[digit][i]);
   }
@@ -63,17 +64,22 @@ float runningAvg = 0;
 // updating the running avg of the signal
 const float runningAvgSensitivity = 1000;
 
+// make the most recent values count more and the oldest count less
+// to the value. more and less are defined by the sensitivity constant above
 void updateRunningAverage(float newValue) {
   runningAvg = ((runningAvgSensitivity - 1.0f) * runningAvg + newValue) / runningAvgSensitivity;  
 }
 
 void loop() {
   int reading = analogRead(antennaPin);
+  // avoid values that are too big
   int constrainedReading = constrain(reading, 0, readingUpperConstraint);
   updateRunningAverage(constrainedReading);
 
+  // normalized the runningAvg
   float constrainedAvg = constrain(runningAvg, avgLowerConstraint, avgUpperConstraint);
   
+  // get the correspoding digit to display
   int displayValue = map(constrainedAvg, avgLowerConstraint, avgUpperConstraint, 0, 9);
   displayDigit(displayValue);
 
