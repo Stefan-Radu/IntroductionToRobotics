@@ -176,7 +176,7 @@ void state1Logic() {
   // handle overflows
   if (segmentValues[segIndex] == 10) {
     segmentValues[segIndex] = 0;
-  } else if (segmentValues[segIndex] == -1) {
+  } else if (segmentValues[segIndex] == 255) {
     segmentValues[segIndex] = 9;
   }
 }
