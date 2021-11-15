@@ -51,7 +51,9 @@ void showSegment(int segmentIndex) {
   digitalWrite(displaySegments[segmentIndex], LOW);
 }
 
-int segmentValues[segmentCount];
+// byte because I want to store this as well in eeprom
+byte segIndex = 0,
+     segmentValues[segmentCount];
 
 const int joyLowThreshold = 200,
           joyHighThreshold = 800,
@@ -60,15 +62,17 @@ const int joyLowThreshold = 200,
 
 int state = 0,
     dotState = HIGH;
-
-// byte because I want to store this as well in eeprom
-byte segIndex = 0;
+    
 bool joyMoved = false;
+
+// unsigned long because we're working with time
+// and we want nice behaviour in case of overflows
 unsigned long timeSnapshot = 0,
               lastStateChange = 0;
 
 void showSegmentValues() {
-  const int multiplexingDelayAmount = 2;
+  const static int multiplexingDelayAmount = 2;
+  
   // iterate array of values and display them one by one
   for (int i = 0; i < segmentCount; ++ i) {
     int digit = digitArray[segmentValues[i]];
@@ -87,7 +91,7 @@ void showSegmentValues() {
 void saveState(int segIndex) {
   // the value of one of the segments was modified
   // store the new value
-  EEPROM.write(segIndex, segmentValues[i]);
+  EEPROM.write(segIndex, segmentValues[segIndex]);
   // also save active segment index;
   EEPROM.write(segmentCount, segIndex);
 }
