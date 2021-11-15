@@ -53,15 +53,14 @@ void initSegmentValues() {
 }
 
 const int joyLowThreshold = 200,
-          joyHighThreshold = 800;
+          joyHighThreshold = 800,
+          dotBlinkDelay = 250;
 
 int state = 0,
     segIndex = 0,
-    dotBlinkDelay = 250,
     dotState = HIGH;
 
 bool joyMoved = false;
-
 unsigned long timeSnapshot = 0; 
 
 void showSegmentValues() {
@@ -76,6 +75,13 @@ void showSegmentValues() {
     showSegment(i);
     delay(multiplexingDelayAmount);
   }
+}
+
+void state0Init() {
+  state = 0;
+  timeSnapshot = millis();
+  joyMoved = false;
+  dotState = HIGH;
 }
 
 void state0Logic() {
@@ -108,8 +114,51 @@ void state0Logic() {
   }
 }
 
+void state1Init() {
+  state = 1;
+  dotState = HIGH;
+}
+
+void state1Logic() {
+  int joyX = analogRead(joyXPin);
+  Serial.println(joyX);
+  
+  if (joyMoved == false && joyX > joyHighThreshold) {
+    joyMoved = true;
+    segmentValues[segIndex] -= 1;
+  }
+
+  if (joyMoved == false && joyX < joyLowThreshold) {
+    joyMoved = true;
+    segmentValues[segIndex] += 1;
+  }
+
+  if (joyMoved == true && joyX >= joyLowThreshold && joyX <= joyHighThreshold) {
+    joyMoved = false;
+  }
+
+  if (segmentValues[segIndex] == 10) {
+    segmentValues[segIndex] = 0;
+  } else if (segmentValues[segIndex] == -1) {
+    segmentValues[segIndex] = 9;
+  }
+}
+
+void switchStateISR() {
+  switch (state) {
+    case 0:
+      state1Init();
+      break;
+    case 1:
+      state0Init();
+      break;
+  }
+}
+
 void setup () {
   pinMode(joySWPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(joySWPin), switchStateISR, FALLING);
+  
   pinMode(joyYPin, INPUT);
   pinMode(joyXPin, INPUT);
   
@@ -121,6 +170,7 @@ void setup () {
     digitalWrite(displaySegments[i], LOW);
   }
 
+  state0Init();  
   initSegmentValues();
   Serial.begin(9600);
 }
@@ -132,6 +182,9 @@ void loop() {
   switch (state) {
     case 0:
       state0Logic();
+      break;
+    case 1:
+      state1Logic();
       break;
   }
   
