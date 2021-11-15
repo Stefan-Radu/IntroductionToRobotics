@@ -1,23 +1,30 @@
+#include <EEPROM.h>
 
+
+// 4 x seven segment display - segment pins
 const int seg1Pin = 7,
           seg2Pin = 6,
           seg3Pin = 5,
           seg4Pin = 4;
 
+// joystick pins
 const int joySWPin = 2,
           joyYPin = A1,
           joyXPin = A0; 
 
+// Shift register pins
 const int dataPin = 12, // DS
 latchPin = 11, // STCP 
 clockPin = 10; // SHCP
 
-const int segmentsCount = 4;
+const int segmentCount = 4;
 const int displaySegments[] = {
   seg1Pin, seg2Pin, seg3Pin, seg4Pin
 };
 
-int digitArray[10] = {
+// corresponing bit states for 0-9 digits
+// to use on 7 seven segment display
+byte digitArray[10] = {
   B11111100, // 0
   B01100000, // 1
   B11011010, // 2
@@ -36,38 +43,38 @@ void writeRegister(int digit) {
   digitalWrite(latchPin, HIGH);
 }
 
+// which segment to light up
 void showSegment(int segmentIndex) {
-  for (int i = 0; i < segmentsCount; ++ i) {
+  for (int i = 0; i < segmentCount; ++ i) {
     digitalWrite(displaySegments[i], HIGH);
   }
   digitalWrite(displaySegments[segmentIndex], LOW);
 }
 
-int segmentValues[segmentsCount];
-
-void initSegmentValues() {
-  // TODO load from memory thingie
-  for (int i = 0; i < segmentsCount; ++ i) {
-    segmentValues[i] = i;
-  }
-}
+int segmentValues[segmentCount];
 
 const int joyLowThreshold = 200,
           joyHighThreshold = 800,
-          dotBlinkDelay = 250;
+          dotBlinkDelay = 250,
+          stateChangeDelay = 1000;
 
 int state = 0,
-    segIndex = 0,
     dotState = HIGH;
 
+// byte because I want to store this as well in eeprom
+byte segIndex = 0;
 bool joyMoved = false;
-unsigned long timeSnapshot = 0; 
+unsigned long timeSnapshot = 0,
+              lastStateChange = 0;
 
 void showSegmentValues() {
   const int multiplexingDelayAmount = 2;
-  for (int i = 0; i < segmentsCount; ++ i) {
+  // iterate array of values and display them one by one
+  for (int i = 0; i < segmentCount; ++ i) {
     int digit = digitArray[segmentValues[i]];
     if (i == segIndex && dotState == HIGH) {
+      // last bit corresponds to the DP.
+      // can be activated by xoring the value with 1
       digit ^= 1;
     }
     
@@ -77,7 +84,31 @@ void showSegmentValues() {
   }
 }
 
+void saveState(int segIndex) {
+  // the value of one of the segments was modified
+  // store the new value
+  EEPROM.write(segIndex, segmentValues[i]);
+  // also save active segment index;
+  EEPROM.write(segmentCount, segIndex);
+}
+
+void loadState() {
+  // iterate over each segment and load it's value
+  // from the corresponding eeprom index;
+  for (int i = 0; i < segmentCount; ++ i) {
+    segmentValues[i] = EEPROM.read(i);
+  }
+  // also get active segment index;
+  segIndex = EEPROM.read(segmentCount);
+}
+
 void state0Init() {
+  if (state == 1) {
+    // if the prvious state was 1,
+    // then the value was changed
+    // save the new value in eeprom
+    saveState(segIndex);
+  }
   state = 0;
   timeSnapshot = millis();
   joyMoved = false;
@@ -86,6 +117,7 @@ void state0Init() {
 
 void state0Logic() {
   unsigned long timeNow = millis();
+  // alternate blinking dot state
   if (timeNow - timeSnapshot > dotBlinkDelay) {
     dotState = !dotState;
     timeSnapshot = timeNow;
@@ -107,10 +139,11 @@ void state0Logic() {
     joyMoved = false;
   }
 
-  if (segIndex == segmentsCount) {
+  // handle overflows
+  if (segIndex == segmentCount) {
     segIndex = 0;
-  } else if (segIndex == -1) {
-    segIndex = segmentsCount - 1;
+  } else if (segIndex == 255) {
+    segIndex = segmentCount - 1;
   }
 }
 
@@ -121,7 +154,6 @@ void state1Init() {
 
 void state1Logic() {
   int joyX = analogRead(joyXPin);
-  Serial.println(joyX);
   
   if (joyMoved == false && joyX > joyHighThreshold) {
     joyMoved = true;
@@ -137,6 +169,7 @@ void state1Logic() {
     joyMoved = false;
   }
 
+  // handle overflows
   if (segmentValues[segIndex] == 10) {
     segmentValues[segIndex] = 0;
   } else if (segmentValues[segIndex] == -1) {
@@ -145,6 +178,13 @@ void state1Logic() {
 }
 
 void switchStateISR() {
+  unsigned long timeNow = millis();
+  // don't switch states too often
+  if (timeNow - lastStateChange < stateChangeDelay) {
+    return;
+  }
+  lastStateChange = timeNow;
+  
   switch (state) {
     case 0:
       state1Init();
@@ -157,7 +197,9 @@ void switchStateISR() {
 
 void setup () {
   pinMode(joySWPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(joySWPin), switchStateISR, FALLING);
+  // switch state when pressing down the button
+  attachInterrupt(digitalPinToInterrupt(joySWPin),
+      switchStateISR, FALLING);
   
   pinMode(joyYPin, INPUT);
   pinMode(joyXPin, INPUT);
@@ -165,20 +207,15 @@ void setup () {
   pinMode(dataPin, OUTPUT);
   pinMode(latchPin, OUTPUT);
   pinMode(clockPin, OUTPUT);
-  for (int i = 0; i < segmentsCount; ++ i) {
+  for (int i = 0; i < segmentCount; ++ i) {
     pinMode(displaySegments[i], OUTPUT);
-    digitalWrite(displaySegments[i], LOW);
   }
 
   state0Init();  
-  initSegmentValues();
-  Serial.begin(9600);
+  loadState();
 }
 
-int hm = 1;
-
 void loop() {
-
   switch (state) {
     case 0:
       state0Logic();
@@ -188,5 +225,6 @@ void loop() {
       break;
   }
   
+  // do this constantly because we're multiplexing
   showSegmentValues();
 }
