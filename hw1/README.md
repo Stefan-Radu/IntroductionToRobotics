@@ -12,4 +12,6 @@ _pls notice, now I've got a cable_
 
 ### Video
 
-[![Potentiometer goes "voop"](https://img.youtube.com/vi/DEQoQUy8244/0.jpg)](https://www.youtube.com/watch?v=DEQoQUy8244)
+<a href="https://www.youtube.com/watch?v=DEQoQUy8244" target="_blank">
+  <img src="https://img.youtube.com/vi/DEQoQUy8244/0.jpg" alt="Potentiometer goes 'voop'"></img>
+</a>

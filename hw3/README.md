@@ -19,4 +19,6 @@ _pls notice, I'm ghost_
 
 ### Video
 
-[![Buhuhuuu...](https://img.youtube.com/vi/kdNrV8vLxoE/0.jpg)](https://youtu.be/kdNrV8vLxoE)
+<a href="https://youtu.be/kdNrV8vLxoE" target="_blank">
+  <img src="https://img.youtube.com/vi/kdNrV8vLxoE/0.jpg" alt="Buhuhuuu..."></img>
+</a>

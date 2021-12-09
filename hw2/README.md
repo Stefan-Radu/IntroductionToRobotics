@@ -25,4 +25,6 @@ _pls notice, I didn't burn it this time_
 
 ### Video
 
-[![Da dada da da ...](https://img.youtube.com/vi/9aiNRyrmK6k/0.jpg)](https://youtu.be/9aiNRyrmK6k)
+<a href="https://youtu.be/9aiNRyrmK6k" target="_blank">
+  <img src="https://img.youtube.com/vi/9aiNRyrmK6k/0.jpg" alt="Da dada da da ..."></img>
+</a>

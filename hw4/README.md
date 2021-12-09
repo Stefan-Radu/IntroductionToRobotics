@@ -23,4 +23,6 @@ _pls notice, the spagetti is upon us_
 
 ### Video
 
-[![clicka clicka](https://img.youtube.com/vi/R1u8NYwtuow/0.jpg)](https://youtu.be/R1u8NYwtuow)
+<a href="https://youtu.be/R1u8NYwtuow" target="_blank">
+  <img src="https://img.youtube.com/vi/R1u8NYwtuow/0.jpg" alt="clicka clicka"></img>
+</a>
