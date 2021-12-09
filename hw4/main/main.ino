@@ -91,9 +91,9 @@ void showSegmentValues() {
 void saveState(int segIndex) {
   // the value of one of the segments was modified
   // store the new value
-  EEPROM.write(segIndex, segmentValues[segIndex]);
+  EEPROM.put(segIndex, segmentValues[segIndex]);
   // also save active segment index;
-  EEPROM.write(segmentCount, segIndex);
+  EEPROM.put(segmentCount, segIndex);
 }
 
 void loadState() {
@@ -106,7 +106,7 @@ void loadState() {
   segIndex = EEPROM.read(segmentCount);
 }
 
-void state0Init() {
+void initSegmentIterationState() {
   if (state == 1) {
     // if the prvious state was 1,
     // then the value was changed
@@ -119,7 +119,7 @@ void state0Init() {
   dotState = HIGH;
 }
 
-void state0Logic() {
+void segmentIterationLogic() {
   unsigned long timeNow = millis();
   // alternate blinking dot state
   if (timeNow - timeSnapshot > dotBlinkDelay) {
@@ -151,12 +151,12 @@ void state0Logic() {
   }
 }
 
-void state1Init() {
+void initDigitCyclingState() {
   state = 1;
   dotState = HIGH;
 }
 
-void state1Logic() {
+void digitCyclingLogic() {
   int joyX = analogRead(joyXPin);
   
   if (joyMoved == false && joyX > joyHighThreshold) {
@@ -191,10 +191,10 @@ void switchStateISR() {
   
   switch (state) {
     case 0:
-      state1Init();
+      initDigitCyclingState();
       break;
     case 1:
-      state0Init();
+      initSegmentIterationState();
       break;
   }
 }
@@ -215,17 +215,17 @@ void setup () {
     pinMode(displaySegments[i], OUTPUT);
   }
 
-  state0Init();  
+  initSegmentIterationState();  
   loadState();
 }
 
 void loop() {
   switch (state) {
     case 0:
-      state0Logic();
+      segmentIterationLogic();
       break;
     case 1:
-      state1Logic();
+      digitCyclingLogic();
       break;
   }
   

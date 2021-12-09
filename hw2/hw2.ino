@@ -16,7 +16,7 @@ unsigned long timeSnapshot = 0, // used in each state for timing
     
 // state0. default state. waiting for button press
 // green for cars, red for people, no sound
-void switchToState0() {
+void switchToGreenForCars() {
   unsigned long currentTimestamp = millis();
   
   // reset values to a default state proper for further use
@@ -33,7 +33,7 @@ void switchToState0() {
   digitalWrite(peopleRedLedPin, HIGH);
 }
 
-void state0Logic() {
+void greenForCarsLogic() {
   static const int debounceDelay = 50;    
   static unsigned long lastDebounceTime = 0;
   
@@ -47,7 +47,7 @@ void state0Logic() {
       buttonState = buttonReading;
       if (buttonState == LOW) {
         // change state on button press
-        switchToState1();
+        switchToWaitingState();
         return;
       }
     }
@@ -58,21 +58,21 @@ void state0Logic() {
 
 // state1. intermediary state between 0 and 2
 // nothing happens. just wait <state1Duration>
-void switchToState1() {
+void switchToWaitingState() {
   currentState = 1;
   timeSnapshot = millis();
 }
 
-void state1Logic() {
+void waitingStateLogic() {
   static const int state1Duration = 10 * 1000; // milliseconds
   if (millis() - timeSnapshot >= state1Duration) {
-    switchToState2();
+    switchToYellowForCars();
   }
 }
 
 // state2. yellow for cars, red for people, no sound
 // wait <state 2 duration> seconds to switch to state 3
-void switchToState2() {
+void switchToYellowForCars() {
   currentState = 2;
   timeSnapshot = millis();
   
@@ -80,16 +80,16 @@ void switchToState2() {
   digitalWrite(carYellowLedPin, HIGH);
 }
 
-void state2Logic() {
+void yellowForCarsLogic() {
   static const int state2Duration = 3 * 1000; // milliseconds
   if (millis() - timeSnapshot >= state2Duration) {
-    switchToState3();
+    switchToGreenForPeople();
   }
 }
 
 // state3. red for cars, green for people, constant beeping
 // wait <state 3 duration> seconds to switch to state 4
-void switchToState3() {
+void switchToGreenForPeople() {
   currentState = 3;
   timeSnapshot = millis();
 
@@ -99,7 +99,7 @@ void switchToState3() {
   digitalWrite(peopleGreenLedPin, HIGH);
 }
 
-void state3Logic() {
+void greenForPeopleLogic() {
   static const int state3Duration = 10 * 1000, // milliseconds
                    buzzInterval = 1000, // milliseconds
                    buzzerTone = 440; // A4
@@ -108,7 +108,7 @@ void state3Logic() {
   unsigned long currentTimestamp = millis();
   if (currentTimestamp - timeSnapshot >= state3Duration) {
     buzzerState = 0;
-    switchToState4();
+    switchToBlinkingGreen();
     return;
   }
 
@@ -126,12 +126,12 @@ void state3Logic() {
 
 // state4. red for cars, blinking green for people, faster beeping
 // wait <state 4 duration> seconds to switch back to default state 0
-void switchToState4() {
+void switchToBlinkingGreen() {
   currentState = 4;
   timeSnapshot = millis();
 }
 
-void state4Logic() {
+void blinkingGreenLogic() {
   // shave and a haircut two bits (total 4.5 seconds)
                                    //    1/4       1/2       1/4,      1/8,     1/8,     1/4,      1/4,      1/4,    1/4       1/4
   static const int buzzIntervals[] = {1, 100, 400, 200, 800, 100, 400, 50, 200, 50, 200, 100, 400, 100, 400, 0, 500, 100, 400, 100, 400}, // durations
@@ -146,7 +146,7 @@ void state4Logic() {
     buzzerStep = 0;
     buzzerState = 0;
     noTone(buzzerPin);
-    switchToState0();
+    switchToGreenForCars();
     return;
   }
 
@@ -178,25 +178,25 @@ void setup() {
   pinMode(buttonPin, INPUT_PULLUP);
 
   // default in state 0
-  switchToState0();
+  switchToGreenForCars();
 }
 
 void loop() {
   switch(currentState) {
     case 0:
-      state0Logic();
+      greenForCarsLogic();
       break;
     case 1:
-      state1Logic();
+      waitingStateLogic();
       break;
     case 2:
-      state2Logic();
+      yellowForCarsLogic();
       break;
     case 3:
-      state3Logic();
+      greenForPeopleLogic();
       break;
     case 4:
-      state4Logic();
+      blinkingGreenLogic();
       break;
   }
 }
