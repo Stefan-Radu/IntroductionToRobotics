@@ -1,4 +1,4 @@
-# Homework 2 - Semaphore
+# Homework 3 - Ghost Detector (a.k.a. EMF detector)
 
 ### Description
 
